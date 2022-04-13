@@ -74,10 +74,12 @@ void db_query(char *name, char *result, int len) {
 int db_add(char *name, char *value) {
     // TODO: Make this thread-safe!
     node_t *parent;
-    
     node_t *newnode;
+    node_t *target;
 
-    node_t *target = search(name, &head, &parent, wrlock);
+    if ((target = search(name, &head, &parent, wrlock)) != 0) {
+        return (0);
+    }
 
     newnode = node_constructor(name, value, 0, 0);
 
@@ -92,10 +94,13 @@ int db_add(char *name, char *value) {
 int db_remove(char *name) {
     // TODO: Make this thread-safe!
     node_t *parent;
-    // first, find the node to be removed
-    node_t *dnode = search(name, &head, &parent, wrlock);
+    node_t *dnode;
     node_t *next;
-
+    
+    // first, find the node to be removed
+    if ((dnode = search(name, &head, &parent, wrlock)) == 0) {
+        return (0);
+    }
     
     // We found it, if the node has no
     // right child, then we can merely replace its parent's pointer to
