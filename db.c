@@ -11,7 +11,7 @@
 // The root node of the binary tree, unlike all
 // other nodes in the tree, this one is never
 // freed (it's allocated in the data region).
-node_t head = {"", "", 0, 0, PTHREAD_RWLOCK_INITIALIZER};
+node_t head = {"root", "", 0, 0, PTHREAD_RWLOCK_INITIALIZER};
 
 node_t *node_constructor(char *arg_name, char *arg_value, node_t *arg_left,
                          node_t *arg_right) {
@@ -60,13 +60,21 @@ void node_destructor(node_t *node) {
 
 void db_query(char *name, char *result, int len) {
     // TODO: Make this thread-safe!
-    node_t *target= search(name, &head, 0, rdlock); 
-
+    node_t *target = search(name, &head, 0, rdlock); 
+    int l = pthread_rwlock_rdlock(&head.rwlock_type);
+    if (l) {
+        perror("lock");
+    }
+    
     if (target == 0) {
         snprintf(result, len, "not found");
         return;
     } else {
         snprintf(result, len, "%s", target->value);
+        l = pthread_rwlock_unlock(&target->rwlock_type);
+        if (l) {
+            perror("unlock");
+        }
     }
     return;
 }
@@ -96,7 +104,7 @@ int db_remove(char *name) {
     node_t *parent;
     node_t *dnode;
     node_t *next;
-    
+
     // first, find the node to be removed
     if ((dnode = search(name, &head, &parent, wrlock)) == 0) {
         return (0);
